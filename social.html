@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Wall</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffeb3b, #f44336, #2196f3);
+      margin: 0;
+      padding: 0;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      color: #b71c1c;
+      padding: 30px 20px;
+      text-align: center;
+      border-radius: 18px;
+      max-width: 960px;
+      margin: 30px auto 20px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 20px auto 30px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 18px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+    }
+
+    h2 {
+      color: #880e4f;
+      margin-bottom: 20px;
+    }
+
+    .thought, .quiz-card {
+      background: rgba(255, 255, 255, 0.96);
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .quiz-card button {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #d32f2f;
+      color: white;
+      cursor: pointer;
+    }
+
+    .quiz-card button:hover {
+      background: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Social Wall</h1>
+    <p>See what others have shared and try community-created quizzes.</p>
+  </header>
+  
+  <div class="container">
+    <h2>Community Thoughts</h2>
+    <div id="socialList"></div>
+  </div>
+  
+  <div class="container">
+    <h2>Community Quizzes</h2>
+    <div id="quizList"></div>
+  </div>
+  
+  <script>
+    function getApiUrl(path) {
+      return window.location.origin + path;
+    }
+
+    function getOwnerId() {
+      let ownerId = localStorage.getItem('digitalWellBeingOwnerId');
+      if (!ownerId) {
+        ownerId = 'owner-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        localStorage.setItem('digitalWellBeingOwnerId', ownerId);
+      }
+      return ownerId;
+    }
+
+    const currentOwnerId = getOwnerId();
+
+    function deleteThought(thoughtId) {
+      const apiUrl = getApiUrl(`/api/thoughts/${thoughtId}`);
+      fetch(apiUrl, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: currentOwnerId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadThoughts();
+        } else {
+          alert(data.error || 'Unable to delete thought.');
+        }
+      })
+      .catch(error => {
+        console.error('Delete thought error:', error);
+        alert('Failed to delete thought. Make sure the server is running.');
+      });
+    }
+
+    function deleteQuiz(quizId) {
+      const apiUrl = getApiUrl(`/api/quizzes/${quizId}`);
+      fetch(apiUrl, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: currentOwnerId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadQuizzes();
+        } else {
+          alert(data.error || 'Unable to delete quiz.');
+        }
+      })
+      .catch(error => {
+        console.error('Delete quiz error:', error);
+        alert('Failed to delete quiz. Make sure the server is running.');
+      });
+    }
+
+    function loadThoughts() {
+      const socialList = document.getElementById("socialList");
+      socialList.innerHTML = "<p>Loading thoughts...</p>";
+      fetch(getApiUrl('/api/thoughts'))
+        .then(response => response.json())
+        .then(thoughts => {
+          socialList.innerHTML = "";
+          if (!Array.isArray(thoughts) || thoughts.length === 0) {
+            socialList.innerHTML = "<p>No thoughts shared yet. Be the first to share!</p>";
+            return;
+          }
+          thoughts.forEach(thought => {
+            const thoughtDiv = document.createElement("div");
+            thoughtDiv.className = "thought";
+            const timestamp = new Date(thought.timestamp).toLocaleString();
+            thoughtDiv.innerHTML = `<strong>${timestamp}</strong><br>${thought.text}`;
+            if (thought.ownerId === currentOwnerId) {
+              const deleteButton = document.createElement('button');
+              deleteButton.textContent = 'Delete Thought';
+              deleteButton.style.marginTop = '10px';
+              deleteButton.onclick = () => deleteThought(thought.id);
+              thoughtDiv.appendChild(deleteButton);
+            }
+            socialList.appendChild(thoughtDiv);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading thoughts:', error);
+          socialList.innerHTML = "<p>Error loading thoughts. Make sure the server is running.</p>";
+        });
+    }
+
+    function loadQuizzes() {
+      const quizList = document.getElementById("quizList");
+      quizList.innerHTML = "<p>Loading quizzes...</p>";
+      fetch(getApiUrl('/api/quizzes'))
+        .then(response => response.json())
+        .then(quizzes => {
+          quizList.innerHTML = "";
+          if (!Array.isArray(quizzes) || quizzes.length === 0) {
+            quizList.innerHTML = "<p>No quizzes created yet. Create one now!</p>";
+            return;
+          }
+          quizzes.forEach(quiz => {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            const timestamp = new Date(quiz.timestamp).toLocaleString();
+            card.innerHTML = `<strong>${quiz.title}</strong><br>${quiz.questionCount} question(s)<br><small>${timestamp}</small>`;
+            const button = document.createElement('button');
+            button.textContent = 'Take Quiz';
+            button.onclick = () => {
+              window.location.href = `quiz.html?id=${quiz.id}`;
+            };
+            card.appendChild(button);
+            if (quiz.ownerId === currentOwnerId) {
+              const deleteButton = document.createElement('button');
+              deleteButton.textContent = 'Delete Quiz';
+              deleteButton.style.marginLeft = '10px';
+              deleteButton.onclick = () => deleteQuiz(quiz.id);
+              card.appendChild(deleteButton);
+            }
+            quizList.appendChild(card);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading quizzes:', error);
+          quizList.innerHTML = "<p>Error loading quizzes. Make sure the server is running.</p>";
+        });
+    }
+
+    window.onload = function() {
+      loadThoughts();
+      loadQuizzes();
+    };
+  </script>
+</body>
+</html>

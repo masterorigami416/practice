@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Your Thoughts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffeb3b, #f44336, #2196f3);
+      margin: 0;
+      padding: 0;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      color: #b71c1c;
+      padding: 30px 20px;
+      text-align: center;
+      border-radius: 18px;
+      margin: 30px auto 20px;
+      max-width: 960px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto 40px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 18px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      background: rgba(255,255,255,0.96);
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #d32f2f;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Add Your Thoughts</h1>
+  </header>
+  <div class="container">
+    <p>Share your thoughts on digital well-being:</p>
+    <textarea id="userInput" placeholder="Type your message here..."></textarea>
+    <button onclick="submitContent()">Submit</button>
+  </div>
+
+  <script>
+    function getOwnerId() {
+      let ownerId = localStorage.getItem('digitalWellBeingOwnerId');
+      if (!ownerId) {
+        ownerId = 'owner-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        localStorage.setItem('digitalWellBeingOwnerId', ownerId);
+      }
+      return ownerId;
+    }
+
+    function submitContent() {
+      const content = document.getElementById('userInput').value;
+      if (content.trim() === '') {
+        alert('Please enter some content.');
+        return;
+      }
+      
+      const apiUrl = window.location.origin + '/api/thoughts';
+      const ownerId = getOwnerId();
+      
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: content, ownerId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Content submitted successfully!');
+          window.location.href = 'social.html';
+        } else {
+          alert('Error: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Fetch error:', error);
+        alert('Failed to submit content.\n\n1. Make sure the server is running (run: node server.js)\n2. Server should be at: http://localhost:3000\n3. Error: ' + error.message);
+      });
+    }
+  </script>
+</body>
+</html>

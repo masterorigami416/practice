@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffeb3b, #f44336, #2196f3);
+      margin: 0;
+      padding: 0;
+      color: #333;
+      min-height: 100vh;
+    }
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      color: #b71c1c;
+      padding: 30px 20px;
+      text-align: center;
+      border-radius: 18px;
+      margin: 30px auto 20px;
+      max-width: 960px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+    .container {
+      max-width: 960px;
+      margin: 20px auto 40px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 18px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+    }
+    .field-group { margin-bottom: 20px; }
+    .field-group label { display: block; font-weight: bold; margin-bottom: 8px; }
+    .field-group input[type=text], .field-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; background: rgba(255,255,255,0.96); }
+    .question-card { border: 1px solid rgba(150,150,150,0.2); padding: 20px; border-radius: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.96); box-shadow: 0 8px 18px rgba(0,0,0,0.08); }
+    .question-card h3 { margin-top: 0; }
+    .option-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .option-row input[type=text] { flex: 1; }
+    .option-row button { padding: 8px 14px; border: none; border-radius: 8px; background: #d32f2f; color: white; cursor: pointer; }
+    button { padding: 12px 18px; border: none; border-radius: 8px; cursor: pointer; background-color: #d32f2f; color: white; transition: background-color 0.2s ease; }
+    button:hover { background-color: #b71c1c; }
+    .small-button { background: #2ecc71; }
+    .small-button:hover { background: #27ae60; }
+    .danger-button { background: #d32f2f; }
+    .danger-button:hover { background: #b71c1c; }
+    .message { margin-top: 20px; padding: 14px; border-radius: 12px; background: #e8f6ff; color: #1f3a64; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Create Quiz</h1>
+    <p>Build a quiz with questions, multiple options, and a correct answer selection.</p>
+  </header>
+  <div class="container">
+    <div class="field-group">
+      <label for="quizTitle">Quiz Title</label>
+      <input id="quizTitle" type="text" placeholder="Enter quiz title" />
+    </div>
+
+    <div id="questions"></div>
+
+    <button type="button" class="small-button" onclick="addQuestion()">Add Question</button>
+    <button type="button" onclick="submitQuiz()">Submit Quiz</button>
+
+    <div id="statusMessage" class="message" style="display:none;"></div>
+  </div>
+
+  <script>
+    let questionCount = 0;
+
+    function createOptionInput(questionIndex, optionIndex, value = '') {
+      const row = document.createElement('div');
+      row.className = 'option-row';
+
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'correct-' + questionIndex;
+      radio.value = optionIndex;
+      row.appendChild(radio);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Option text';
+      input.value = value;
+      input.dataset.optionIndex = optionIndex;
+      row.appendChild(input);
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'danger-button';
+      remove.textContent = 'Remove';
+      remove.onclick = () => removeOption(questionIndex, row);
+      row.appendChild(remove);
+
+      return row;
+    }
+
+    function addQuestion() {
+      const index = questionCount++;
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.id = 'question-' + index;
+
+      const heading = document.createElement('h3');
+      heading.textContent = 'Question ' + (index + 1);
+      card.appendChild(heading);
+
+      const field = document.createElement('div');
+      field.className = 'field-group';
+      field.innerHTML = `<label>Question text</label><input type="text" placeholder="Enter question text" />`;
+      card.appendChild(field);
+
+      const optionsContainer = document.createElement('div');
+      optionsContainer.className = 'field-group';
+      optionsContainer.innerHTML = '<label>Options (choose correct answer below)</label>';
+      optionsContainer.id = 'options-' + index;
+      card.appendChild(optionsContainer);
+
+      const option1 = createOptionInput(index, 0);
+      const option2 = createOptionInput(index, 1);
+      optionsContainer.appendChild(option1);
+      optionsContainer.appendChild(option2);
+
+      const addOptionBtn = document.createElement('button');
+      addOptionBtn.type = 'button';
+      addOptionBtn.className = 'small-button';
+      addOptionBtn.textContent = 'Add Option';
+      addOptionBtn.onclick = () => addOption(index);
+      card.appendChild(addOptionBtn);
+
+      const removeQuestionBtn = document.createElement('button');
+      removeQuestionBtn.type = 'button';
+      removeQuestionBtn.className = 'danger-button';
+      removeQuestionBtn.style.marginLeft = '10px';
+      removeQuestionBtn.textContent = 'Remove Question';
+      removeQuestionBtn.onclick = () => removeQuestion(index);
+      card.appendChild(removeQuestionBtn);
+
+      document.getElementById('questions').appendChild(card);
+    }
+
+    function addOption(questionIndex) {
+      const optionsContainer = document.getElementById('options-' + questionIndex);
+      const optionCount = optionsContainer.querySelectorAll('.option-row').length;
+      const optionRow = createOptionInput(questionIndex, optionCount);
+      optionsContainer.appendChild(optionRow);
+    }
+
+    function removeOption(questionIndex, row) {
+      const optionsContainer = document.getElementById('options-' + questionIndex);
+      const rows = optionsContainer.querySelectorAll('.option-row');
+      if (rows.length <= 2) {
+        alert('Each question must have at least two options.');
+        return;
+      }
+      row.remove();
+      updateOptionIndices(questionIndex);
+    }
+
+    function updateOptionIndices(questionIndex) {
+      const optionsContainer = document.getElementById('options-' + questionIndex);
+      const rows = optionsContainer.querySelectorAll('.option-row');
+      rows.forEach((row, optionIndex) => {
+        const radio = row.querySelector('input[type=radio]');
+        radio.value = optionIndex;
+        const textInput = row.querySelector('input[type=text]');
+        textInput.dataset.optionIndex = optionIndex;
+      });
+    }
+
+    function removeQuestion(questionIndex) {
+      const card = document.getElementById('question-' + questionIndex);
+      if (card) card.remove();
+    }
+
+    function showStatus(message, success = true) {
+      const status = document.getElementById('statusMessage');
+      status.textContent = message;
+      status.style.display = 'block';
+      status.style.background = success ? '#e8f6ff' : '#ffe6e6';
+      status.style.color = success ? '#1f3a64' : '#a12f2f';
+    }
+
+    function getOwnerId() {
+      let ownerId = localStorage.getItem('digitalWellBeingOwnerId');
+      if (!ownerId) {
+        ownerId = 'owner-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        localStorage.setItem('digitalWellBeingOwnerId', ownerId);
+      }
+      return ownerId;
+    }
+
+    function submitQuiz() {
+      const title = document.getElementById('quizTitle').value.trim();
+      const questionCards = document.querySelectorAll('.question-card');
+      const questions = [];
+
+      if (!title) {
+        showStatus('Quiz title is required.', false);
+        return;
+      }
+      if (questionCards.length === 0) {
+        showStatus('Please add at least one question.', false);
+        return;
+      }
+
+      for (const card of questionCards) {
+        const questionText = card.querySelector('input[type=text]').value.trim();
+        const optionsContainer = card.querySelector('[id^="options-"]');
+        const optionRows = optionsContainer.querySelectorAll('.option-row');
+        const options = [];
+        let answerIndex = null;
+
+        optionRows.forEach((row, idx) => {
+          const text = row.querySelector('input[type=text]').value.trim();
+          const radio = row.querySelector('input[type=radio]');
+          if (text) {
+            options.push(text);
+          }
+          if (radio.checked) {
+            answerIndex = idx;
+          }
+        });
+
+        if (!questionText) {
+          showStatus('Please add question text for all questions.', false);
+          return;
+        }
+        if (options.length < 2) {
+          showStatus('Each question needs at least two options.', false);
+          return;
+        }
+        if (answerIndex === null || answerIndex < 0 || answerIndex >= options.length) {
+          showStatus('Please select the correct answer for every question.', false);
+          return;
+        }
+
+        questions.push({ question: questionText, options, answerIndex });
+      }
+
+      const ownerId = getOwnerId();
+      const apiUrl = window.location.origin + '/api/quizzes';
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, questions, ownerId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = 'social.html';
+        } else {
+          showStatus(data.error || 'Failed to save quiz.', false);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        showStatus('Unable to submit quiz. Make sure the server is running.', false);
+      });
+    }
+
+    addQuestion();
+  </script>
+</body>
+</html>

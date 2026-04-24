@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movies</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffeb3b, #f44336, #2196f3);
+      margin: 0;
+      padding: 0;
+      color: #333;
+      min-height: 100vh;
+    }
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      color: #b71c1c;
+      padding: 30px 20px;
+      text-align: center;
+      border-radius: 18px;
+      max-width: 960px;
+      margin: 30px auto 20px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+    .container {
+      max-width: 960px;
+      margin: 20px auto 40px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 18px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+    }
+    .field-group { margin-bottom: 18px; }
+    .field-group label { display: block; font-weight: bold; margin-bottom: 6px; }
+    .field-group input[type=text], .field-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; background: rgba(255,255,255,0.96); }
+    .field-group input[type=file] { width: 100%; }
+    button { padding: 12px 18px; border: none; border-radius: 8px; cursor: pointer; background: #d32f2f; color: white; transition: background-color 0.2s ease; }
+    button:hover { background: #b71c1c; }
+    .video-card { margin-bottom: 24px; background: rgba(255,255,255,0.98); padding: 18px; border-radius: 16px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .video-card h3 { margin-top: 0; }
+    .video-card video { width: 100%; border-radius: 12px; margin-bottom: 12px; }
+    .video-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .video-actions button, .video-actions a { text-decoration: none; }
+    .message { margin-top: 16px; padding: 14px; border-radius: 12px; background: #e8f6ff; color: #1f3a64; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Movies</h1>
+    <p>Add, view, download, and manage videos shared by the community.</p>
+  </header>
+  <div class="container">
+    <h2>Add a Video</h2>
+    <div class="field-group">
+      <label for="videoTitle">Title</label>
+      <input id="videoTitle" type="text" placeholder="Enter video title" />
+    </div>
+    <div class="field-group">
+      <label for="videoDescription">Description</label>
+      <textarea id="videoDescription" rows="3" placeholder="Enter a short description"></textarea>
+    </div>
+    <div class="field-group">
+      <label for="videoFile">Select Video</label>
+      <input id="videoFile" type="file" accept="video/*" />
+    </div>
+    <button type="button" onclick="uploadVideo()">Upload Video</button>
+    <div id="statusMessage" class="message" style="display:none;"></div>
+  </div>
+
+  <div class="container">
+    <h2>Community Videos</h2>
+    <div id="videoList">Loading videos...</div>
+  </div>
+
+  <script>
+    function getOwnerId() {
+      let ownerId = localStorage.getItem('digitalWellBeingOwnerId');
+      if (!ownerId) {
+        ownerId = 'owner-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        localStorage.setItem('digitalWellBeingOwnerId', ownerId);
+      }
+      return ownerId;
+    }
+
+    function getApiUrl(path) {
+      return window.location.origin + path;
+    }
+
+    function showStatus(message, success = true) {
+      const status = document.getElementById('statusMessage');
+      status.textContent = message;
+      status.style.display = 'block';
+      status.style.background = success ? '#e8f6ff' : '#ffe6e6';
+      status.style.color = success ? '#1f3a64' : '#a12f2f';
+    }
+
+    function uploadVideo() {
+      const title = document.getElementById('videoTitle').value.trim();
+      const description = document.getElementById('videoDescription').value.trim();
+      const fileInput = document.getElementById('videoFile');
+      const file = fileInput.files[0];
+
+      if (!title) {
+        showStatus('Please enter a video title.', false);
+        return;
+      }
+      if (!file) {
+        showStatus('Please choose a video file.', false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('ownerId', getOwnerId());
+      formData.append('videoFile', file);
+
+      fetch(getApiUrl('/api/videos'), {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showStatus('Video uploaded successfully.');
+          document.getElementById('videoTitle').value = '';
+          document.getElementById('videoDescription').value = '';
+          fileInput.value = '';
+          loadVideos();
+        } else {
+          showStatus(data.error || 'Failed to upload video.', false);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        showStatus('Failed to upload video. Make sure the server is running.', false);
+      });
+    }
+
+    function deleteVideo(videoId) {
+      if (!confirm('Delete this video permanently?')) return;
+      fetch(getApiUrl(`/api/videos/${videoId}`), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: getOwnerId() })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadVideos();
+        } else {
+          alert(data.error || 'Unable to delete video.');
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        alert('Failed to delete video. Make sure the server is running.');
+      });
+    }
+
+    function loadVideos() {
+      const videoList = document.getElementById('videoList');
+      videoList.innerHTML = '<p>Loading videos...</p>';
+      fetch(getApiUrl('/api/videos'))
+        .then(response => response.json())
+        .then(videos => {
+          videoList.innerHTML = '';
+          if (!Array.isArray(videos) || videos.length === 0) {
+            videoList.innerHTML = '<p>No videos have been added yet.</p>';
+            return;
+          }
+
+          videos.forEach(video => {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+
+            const title = document.createElement('h3');
+            title.textContent = video.title;
+            card.appendChild(title);
+
+            if (video.description) {
+              const desc = document.createElement('p');
+              desc.textContent = video.description;
+              card.appendChild(desc);
+            }
+
+            const timestamp = document.createElement('p');
+            timestamp.style.fontSize = '0.9em';
+            timestamp.style.color = '#555';
+            timestamp.textContent = 'Uploaded: ' + new Date(video.timestamp).toLocaleString();
+            card.appendChild(timestamp);
+
+            const preview = document.createElement('video');
+            preview.controls = true;
+            preview.src = `videos/${encodeURIComponent(video.filename)}`;
+            card.appendChild(preview);
+
+            const actions = document.createElement('div');
+            actions.className = 'video-actions';
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = `videos/${encodeURIComponent(video.filename)}`;
+            downloadLink.download = video.originalName || video.filename;
+            downloadLink.textContent = 'Download Video';
+            downloadLink.style.display = 'inline-block';
+            downloadLink.style.padding = '10px 14px';
+            downloadLink.style.background = '#2ecc71';
+            downloadLink.style.color = 'white';
+            downloadLink.style.borderRadius = '6px';
+            downloadLink.style.textDecoration = 'none';
+            actions.appendChild(downloadLink);
+
+            if (video.ownerId === getOwnerId()) {
+              const deleteButton = document.createElement('button');
+              deleteButton.type = 'button';
+              deleteButton.textContent = 'Delete Video';
+              deleteButton.onclick = () => deleteVideo(video.id);
+              actions.appendChild(deleteButton);
+            }
+
+            card.appendChild(actions);
+            videoList.appendChild(card);
+          });
+        })
+        .catch(error => {
+          console.error(error);
+          videoList.innerHTML = '<p>Error loading videos. Make sure the server is running.</p>';
+        });
+    }
+
+    loadVideos();
+  </script>
+</body>
+</html>

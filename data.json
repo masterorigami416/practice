@@ -1,0 +1,52 @@
+{
+  "thoughts": [
+    {
+      "id": 1777031061905,
+      "text": "This is a test thought about digital well-being",
+      "timestamp": "2026-04-24T11:44:21.905Z"
+    },
+    {
+      "id": 1777031228319,
+      "text": "Testing CORS fix",
+      "timestamp": "2026-04-24T11:47:08.319Z"
+    },
+    {
+      "id": 1777031404648,
+      "text": "fds",
+      "timestamp": "2026-04-24T11:50:04.648Z"
+    },
+    {
+      "id": 1777036176904,
+      "text": "this website is made by master origami-atharav dixit ",
+      "timestamp": "2026-04-24T13:09:36.904Z",
+      "ownerId": "owner-1777032891162-am8l229n7ga"
+    }
+  ],
+  "quizzes": [
+    {
+      "id": 1777032580254,
+      "title": "dwqqw3r2",
+      "questions": [
+        {
+          "question": "aaasaasss",
+          "options": [
+            "1",
+            "2",
+            "22"
+          ],
+          "answerIndex": 0
+        },
+        {
+          "question": "aqffdwdsas",
+          "options": [
+            "dsdsa",
+            "sdsd"
+          ],
+          "answerIndex": 0
+        }
+      ],
+      "timestamp": "2026-04-24T12:09:40.254Z"
+    }
+  ],
+  "videos": []
+}
